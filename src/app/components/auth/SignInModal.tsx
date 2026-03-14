@@ -43,29 +43,53 @@ export function SignInModal({ isOpen, onClose, onSuccess }: SignInModalProps) {
 
   // Initialize reCAPTCHA for phone auth
   useEffect(() => {
-    if (isOpen && !recaptchaVerifier) {
+    if (isOpen) {
+      // Clear any existing verifier first
+      if (recaptchaVerifier) {
+        try {
+          recaptchaVerifier.clear();
+        } catch (e) {
+          console.log('Error clearing old verifier:', e);
+        }
+      }
+      
+      // Create new verifier
       try {
+        // Make sure the container exists
+        const container = document.getElementById('recaptcha-container');
+        if (!container) {
+          console.error('reCAPTCHA container not found');
+          return;
+        }
+        
         const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
           size: 'invisible',
-          callback: () => {
-            console.log('reCAPTCHA solved');
+          callback: (response: any) => {
+            console.log('reCAPTCHA solved', response);
           },
           'expired-callback': () => {
             console.log('reCAPTCHA expired');
+            setError('Verification expired. Please try again.');
           }
         });
+        
         setRecaptchaVerifier(verifier);
+        console.log('reCAPTCHA initialized successfully');
       } catch (error) {
         console.error('Error initializing reCAPTCHA:', error);
-        // Don't block the UI if reCAPTCHA fails
         setError('Phone authentication unavailable. Please use Google or Email sign-in.');
       }
     }
     
-    // Cleanup
+    // Cleanup on unmount or when modal closes
     return () => {
-      if (recaptchaVerifier) {
-        recaptchaVerifier.clear();
+      if (recaptchaVerifier && !isOpen) {
+        try {
+          recaptchaVerifier.clear();
+          setRecaptchaVerifier(null);
+        } catch (e) {
+          console.log('Error during cleanup:', e);
+        }
       }
     };
   }, [isOpen]);
