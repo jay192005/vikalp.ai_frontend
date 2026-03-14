@@ -49,14 +49,26 @@ export function SignInModal({ isOpen, onClose, onSuccess }: SignInModalProps) {
           size: 'invisible',
           callback: () => {
             console.log('reCAPTCHA solved');
+          },
+          'expired-callback': () => {
+            console.log('reCAPTCHA expired');
           }
         });
         setRecaptchaVerifier(verifier);
       } catch (error) {
         console.error('Error initializing reCAPTCHA:', error);
+        // Don't block the UI if reCAPTCHA fails
+        setError('Phone authentication unavailable. Please use Google or Email sign-in.');
       }
     }
-  }, [isOpen, recaptchaVerifier]);
+    
+    // Cleanup
+    return () => {
+      if (recaptchaVerifier) {
+        recaptchaVerifier.clear();
+      }
+    };
+  }, [isOpen]);
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
